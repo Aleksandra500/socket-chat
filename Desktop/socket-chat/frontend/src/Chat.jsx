@@ -1,71 +1,75 @@
-import React, { useEffect, useState, useRef } from 'react';
-import socket from './socket';
+import { useEffect, useState } from "react";
+import { getMessages, sendMessage } from "../services/messageService";
 
 function Chat() {
-  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const messagesEndRef = useRef(null);
+  const [text, setText] = useState("");
+  const [sender, setSender] = useState("Aleksandra 😊"); // kasnije ćeš ovo zameniti loginom
 
-  // Funkcija za scroll do poslednje poruke
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   useEffect(() => {
-    // Prijem poruka sa servera
-    socket.on('chatMessage', (msg) => {
-      setMessages((prev) => [...prev, msg]);
-    });
-
-    return () => {
-      socket.off('chatMessage');
+    const fetchMessages = async () => {
+      try {
+        const data = await getMessages();
+        setMessages(data);
+      } catch (error) {
+        console.error("Greška pri dohvatanju poruka:", error);
+      }
     };
+
+    fetchMessages();
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
-  const sendMessage = () => {
-    if (message.trim() !== '') {
-      socket.emit('chatMessage', message); // šalje poruku serveru
-      setMessage('');
+  const handleSend = async (e) => {
+    e.preventDefault();
+
+    if (!text.trim()) return;
+
+    const newMessage = { sender, text };
+
+    try {
+      const saved = await sendMessage(newMessage);
+      setMessages((prev) => [...prev, saved]);
+      setText("");
+    } catch (error) {
+      console.error("Greška pri slanju poruke:", error);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') sendMessage(); // Enter za slanje
-  };
-
   return (
-    <div className="w-full max-w-md mx-auto mt-10 p-4 border border-gray-400 rounded-lg shadow-lg bg-white">
-      <h2 className="text-xl font-bold mb-4 text-center">Chat Room</h2>
-      
-      <div className="h-64 overflow-y-auto border border-gray-300 p-2 mb-4 bg-gray-50 rounded">
-        {messages.map((msg, idx) => (
-          <div key={idx} className="mb-2">
-            {msg}
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
+    <div className="flex flex-col h-screen max-w-md mx-auto p-4 bg-gray-100">
+      <h1 className="text-2xl font-semibold text-center mb-4">💬 Chat App</h1>
+
+      {/* Lista poruka */}
+      <div className="flex-1 overflow-y-auto mb-4 p-3 bg-white rounded-xl shadow">
+        {messages.length === 0 ? (
+          <p className="text-gray-400 text-center">Nema poruka još 😄</p>
+        ) : (
+          messages.map((msg) => (
+            <div key={msg.id || msg.timestamp} className="mb-2">
+              <strong>{msg.sender}:</strong> <span>{msg.text}</span>
+            </div>
+          ))
+        )}
       </div>
 
-      <div className="flex">
+   
+      <form onSubmit={handleSend} className="flex gap-2">
         <input
           type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyPress}
-          className="flex-1 border border-gray-300 rounded-l px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          placeholder="Type your message..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Unesi poruku..."
+          className="flex-1 border rounded-xl p-2 outline-none"
         />
         <button
-          onClick={sendMessage}
-          className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600"
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl px-4"
         >
-          Send
+          Pošalji
         </button>
-      </div>
+      </form>
     </div>
   );
 }

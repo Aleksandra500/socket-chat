@@ -1,6 +1,5 @@
 const MessageModel = require("../models/messageModel") 
 
-// 🔹 Dohvati sve poruke iz baze
 const getAllMessages = (req, res) => {
   MessageModel.getAllMessages((err, results) => {
     if (err) {
@@ -11,7 +10,7 @@ const getAllMessages = (req, res) => {
   });
 };
 
-// 🔹 Dodaj novu poruku
+
 const addMessage = (req, res) => {
   const { sender, text } = req.body;
 
@@ -35,4 +34,4 @@ const addMessage = (req, res) => {
   });
 };
 
-module.exports = {getAllMessages, addMessage}
+module.exports = { getAllMessages, addMessage }
