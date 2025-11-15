@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getMessages, sendMessage } from "./services/messageService";
 import UserComponents from "./components/UserComponents";
 
 export default function ChatPage({ currentUser, onSelectUser }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -18,6 +19,10 @@ export default function ChatPage({ currentUser, onSelectUser }) {
     fetchMessages();
   }, []);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!text.trim()) return;
@@ -25,7 +30,7 @@ export default function ChatPage({ currentUser, onSelectUser }) {
     const newMessage = { sender: currentUser, text };
     try {
       const saved = await sendMessage(newMessage);
-      setMessages(prev => [...prev, saved]);
+      setMessages((prev) => [...prev, saved]);
       setText("");
     } catch (err) {
       console.error(err);
@@ -33,44 +38,49 @@ export default function ChatPage({ currentUser, onSelectUser }) {
   };
 
   return (
-    <div className="flex flex-1 h-full flex-col sm:flex-row">
+    <div className="flex flex-col sm:flex-row h-full min-h-[calc(100vh-2rem)] gap-4 p-2 sm:p-4">
       {/* Sidebar */}
-      <div className="w-full sm:w-1/4 bg-indigo-50 p-2 sm:p-4 overflow-y-auto rounded-t-2xl sm:rounded-l-2xl shadow-inner">
-        <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-4 text-indigo-800">👥 Users</h2>
-        <UserComponents onSelectUser={onSelectUser} />
+      <div className="w-full sm:w-64 bg-indigo-50 p-4 rounded-2xl shadow-inner flex-shrink-0 overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4 text-indigo-800">👥 Users</h2>
+        <UserComponents currentUser={currentUser} onSelectUser={onSelectUser} />
       </div>
 
-      {/* Glavni chat */}
-      <div className="flex-1 flex flex-col p-2 sm:p-4 bg-purple-50 rounded-b-2xl sm:rounded-r-2xl mt-2 sm:mt-0">
-        <h1 className="text-xl sm:text-2xl font-bold text-center mb-2 sm:mb-4 text-purple-700">💬 Global Chat</h1>
-        <div className="flex-1 overflow-y-auto mb-2 sm:mb-4 p-2 sm:p-3 bg-white rounded-2xl shadow-inner">
+      {/* Chat Section */}
+      <div className="flex-1 flex flex-col bg-purple-50 p-4 rounded-2xl shadow-inner">
+        <h1 className="text-2xl font-bold text-center mb-4 text-purple-700">💬 Global Chat</h1>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 bg-white rounded-2xl shadow-inner flex flex-col gap-2">
           {messages.length === 0 ? (
-            <p className="text-gray-400 text-center">Nema poruka još 😄</p>
+            <p className="text-gray-400 text-center mt-auto mb-auto">Nema poruka još 😄</p>
           ) : (
-            messages.map(msg => (
+            messages.map((msg) => (
               <div
                 key={msg.id || msg.timestamp}
-                className={`mb-2 p-2 max-w-[70%] rounded-xl shadow ${
+                className={`p-3 max-w-[70%] rounded-xl shadow break-words ${
                   msg.sender === currentUser ? "bg-blue-200 self-end" : "bg-gray-200 self-start"
                 }`}
               >
-                <strong className="text-blue-800">{msg.sender}:</strong> <span>{msg.text}</span>
+                <strong className="text-blue-800">{msg.sender}:</strong>{" "}
+                <span>{msg.text}</span>
               </div>
             ))
           )}
+          <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSend} className="flex gap-2">
+        {/* Input */}
+        <form onSubmit={handleSend} className="flex gap-2 mt-4">
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Unesi poruku..."
-            className="flex-1 border rounded-full p-2 sm:p-3 text-sm sm:text-base outline-none shadow-md"
+            className="flex-1 border rounded-full p-3 text-base outline-none shadow-md"
           />
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 sm:px-6 py-2 shadow-md text-sm sm:text-base"
+            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full px-6 py-2 shadow-md text-base"
           >
             Pošalji
           </button>
